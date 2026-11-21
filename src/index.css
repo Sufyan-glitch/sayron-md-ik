@@ -1,0 +1,211 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #030712;
+    color: #f8fafc;
+    overflow-x: hidden;
+  }
+}
+
+.font-cyber {
+  font-family: 'Orbitron', monospace, sans-serif;
+}
+
+.font-code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.02);
+  }
+}
+
+@keyframes cyberPulse {
+  0%, 100% {
+    opacity: 0.35;
+    filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.45));
+  }
+  50% {
+    opacity: 0.85;
+    filter: drop-shadow(0 0 35px rgba(16, 185, 129, 0.65));
+  }
+}
+
+@keyframes scanlineAnim {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(1000%);
+  }
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+  }
+  50% {
+    border-color: rgba(239, 68, 68, 0.6);
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.35);
+  }
+}
+
+.aurora-glow {
+  animation: floatSlow 8s ease-in-out infinite;
+}
+
+.cyber-glow-pulse {
+  animation: cyberPulse 4s ease-in-out infinite;
+}
+
+.cyber-border-active {
+  animation: borderGlow 6s ease-in-out infinite;
+}
+
+.cyber-scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.9), rgba(239, 68, 68, 0.9), transparent);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+  opacity: 0.7;
+  animation: scanlineAnim 7s linear infinite;
+  pointer-events: none;
+}
+
+/* Background Cyber Grid */
+.cyber-grid-bg {
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(239, 68, 68, 0.15) 0%, transparent 60%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 36px 36px, 36px 36px;
+}
+
+/* High-tech glass panel */
+.hud-glass {
+  background: rgba(10, 15, 29, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Cyber Beveled Cut-Corner Clip-Paths */
+.clip-cyber-btn {
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+}
+
+.clip-cyber-card {
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+}
+
+.clip-cyber-bar {
+  clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%);
+}
+
+.crimson-metal-card {
+  background: linear-gradient(155deg, rgba(24, 6, 10, 0.94) 0%, rgba(10, 3, 6, 0.96) 55%, rgba(28, 5, 10, 0.94) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 140, 140, 0.22), inset 0 -1px 0 rgba(239, 68, 68, 0.35), 0 10px 30px rgba(0, 0, 0, 0.75);
+}
+
+.crimson-hero-frame {
+  background: linear-gradient(135deg, rgba(14, 4, 7, 0.96) 0%, rgba(7, 2, 4, 0.98) 60%, rgba(28, 4, 8, 0.95) 100%);
+  box-shadow: inset 0 0 25px rgba(239, 68, 68, 0.25), 0 0 28px rgba(220, 38, 38, 0.35);
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spinReverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 18s linear infinite;
+}
+
+.animate-spin-reverse {
+  animation: spinReverse 24s linear infinite;
+}
+
+/* Electric Laser Vertical Borders */
+.cyber-laser-edge {
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.7), inset 0 0 15px rgba(0, 119, 255, 0.5);
+}
+
+.hud-glass-heavy {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(3, 7, 18, 0.96) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #030712;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #10b981;
+}
+
+/* Live Floating Fiery Cyber Embers */
+@keyframes emberRise {
+  0% {
+    transform: translateY(105vh) translateX(0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  85% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(-15vh) translateX(30px) scale(1.15);
+    opacity: 0;
+  }
+}
+
+.animate-ember-1 {
+  animation: emberRise 8s linear infinite;
+}
+.animate-ember-2 {
+  animation: emberRise 11s linear infinite 2s;
+}
+.animate-ember-3 {
+  animation: emberRise 7.5s linear infinite 3.5s;
+}
+.animate-ember-4 {
+  animation: emberRise 13s linear infinite 1.2s;
+}
+.animate-ember-5 {
+  animation: emberRise 9.5s linear infinite 5s;
+}

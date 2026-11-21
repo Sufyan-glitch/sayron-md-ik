@@ -1,0 +1,202 @@
+{
+  "durableUpdatedAt": "2026-11-17T12:51:30.091Z",
+  "storeVersion": 9,
+  "aiMode": false,
+  "adminPinHash": "e7ff3b937b76bfff6c58aa6c6debf9ec6af96634d7517c84ce48cff000f27398",
+  "settings": {
+    "prefix": ".",
+    "botName": "SAYRON MD",
+    "botBio": "Official SAYRON MD • Developed by SUFYAN-X-IK",
+    "language": "Roman Urdu",
+    "personality": "friendly",
+    "typingIndicator": true,
+    "autoRead": true,
+    "autoReact": false,
+    "autoStatusView": true,
+    "autoStatusLike": true,
+    "statusLikeEmoji": "💚",
+    "presenceMode": "available",
+    "maintenanceMode": false,
+    "autoTyping": true,
+    "autoRecording": false,
+    "botMode": "public",
+    "ownerNumber": "923464267218, 923708392045",
+    "channelJid": "120363429680836023@newsletter",
+    "channelInviteCode": "https://whatsapp.com/channel/0029VbD2ggC9WtCAOvZlwe1I",
+    "channelName": "SAYRON MD • X-IK AI",
+    "menuImage": "/src/assets/images/sayron_md_banner_1794054357635.jpg",
+    "menuTitle": "SAYRON MD BOT",
+    "antiDelete": false,
+    "antiVv": false,
+    "autoJoin": false,
+    "callMusic": false,
+    "alwaysOnline": true,
+    "payInfo": "EasyPaisa / JazzCash / SadaPay: +92 346 4267218 (SUFYAN-X-IK)\nSend payment screenshot after transfer."
+  },
+  "groupConfigs": {},
+  "warnings": {},
+  "memories": {},
+  "notes": {},
+  "todos": {},
+  "blockedUsers": [],
+  "business": {
+    "businessName": "X-IK AI Official Hub",
+    "ownerName": "SUFYAN-X-IK",
+    "ownerRole": "Founder, Lead Developer & AI Architect",
+    "ownerBio": "SUFYAN-X-IK is a full-stack developer, AI automation specialist, and digital entrepreneur.",
+    "ownerStatus": "Available",
+    "contactNumbers": "923464267218, 923708392045",
+    "workingHours": "24/7 Active",
+    "supportedLanguages": [
+      "Urdu",
+      "Roman Urdu",
+      "English",
+      "Punjabi",
+      "Hindi"
+    ],
+    "toneOfVoice": "Mirror the user: sweet & respectful when spoken to nicely; savage heavy roast if someone is abusive or disrespectful.",
+    "customInstructions": "Always represent X-IK AI and owner SUFYAN-X-IK with loyalty. Keep normal replies short (1-3 lines).",
+    "products": [
+      {
+        "id": "prod-capcut-pro",
+        "name": "CapCut Pro Official Subscription",
+        "description": "Full access to CapCut Pro cloud storage, premium transitions, AI captions, 4K 60fps export, and no watermark on PC & Mobile.",
+        "price": "PKR 350 / Month (Shared) or PKR 600 / Month (Private Account)",
+        "features": [
+          "4K Ultra HD Export without watermark",
+          "All Pro effects, auto-captions & background removal",
+          "Works on Android, iOS, Windows & Mac",
+          "Full 28-Day replacement warranty included"
+        ],
+        "availability": "Available",
+        "paymentMethods": "EasyPaisa, JazzCash, SadaPay, NayaPay, Bank Transfer",
+        "deliveryMethod": "Instant delivery on WhatsApp within 5–10 minutes after payment verification.",
+        "supportInfo": "24/7 warranty support via WhatsApp.",
+        "category": "AI & Digital Tools"
+      },
+      {
+        "id": "prod-chatgpt-plus",
+        "name": "ChatGPT Plus / Pro AI Workspace Access",
+        "description": "High-speed access to latest GPT-4o / Pro models, coding assistant, file analysis, and image generation.",
+        "price": "PKR 800 / Month",
+        "features": [
+          "Unlimited fast responses & code generation",
+          "Custom GPTs and file uploads",
+          "Full 30-day warranty by SUFYAN-X-IK"
+        ],
+        "availability": "Available",
+        "paymentMethods": "EasyPaisa, JazzCash, SadaPay, NayaPay",
+        "deliveryMethod": "Instant activation within 10 minutes.",
+        "supportInfo": "Full replacement & login support.",
+        "category": "AI & Digital Tools"
+      },
+      {
+        "id": "prod-web-dev",
+        "name": "Website, Bot & Custom Coding Services",
+        "description": "Full-stack websites, WhatsApp automation bots, Python/Node.js scripts, and custom AI integrations built by SUFYAN-X-IK.",
+        "price": "Starting from PKR 3,500 (Custom quote based on project)",
+        "features": [
+          "Modern responsive UI + fast backend",
+          "Complete source code & deployment help",
+          "Direct technical support from SUFYAN-X-IK"
+        ],
+        "availability": "Available",
+        "paymentMethods": "EasyPaisa, JazzCash, Bank Transfer, USDT",
+        "deliveryMethod": "Delivered via GitHub / ZIP / Live Deployment.",
+        "supportInfo": "Free bug fixes & maintenance support.",
+        "category": "Development & Coding"
+      }
+    ],
+    "faqs": [
+      {
+        "id": "faq-payment",
+        "question": "Payment kaise karni hai aur account kab milega?",
+        "answer": "Aap EasyPaisa, JazzCash, SadaPay ya NayaPay par payment bhej kar screenshot send karein. Verification ke foran baad 5 se 10 minute mein aapka account/service activate kar di jati hai."
+      },
+      {
+        "id": "faq-warranty",
+        "question": "Agar account mein koi issue aaye to kya warranty hai?",
+        "answer": "Bilkul! Har subscription ke sath full warranty hoti hai. Agar koi bhi login ya subscription issue aaye to foran replacement ya fix diya jata hai."
+      }
+    ]
+  },
+  "customCommands": {},
+  "commandRules": {},
+  "userMetas": {},
+  "aiConfig": {
+    "provider": "gemini",
+    "model": "gemini-2.5-flash",
+    "maxOutputTokens": 2048,
+    "temperature": 0.7,
+    "enabled": true,
+    "rateLimitPerUser": 40,
+    "customSystemPrompt": "You are SUFYAN-X-IK AI, an elite, helpful cyber AI assistant."
+  },
+  "downloaderConfig": {
+    "enabled": true,
+    "maxFileSizeMb": 100,
+    "audioBitrate": "192k",
+    "allowVideo": true,
+    "allowAudio": true,
+    "supportedPlatforms": [
+      "YouTube",
+      "SoundCloud",
+      "JioSaavn",
+      "TikTok",
+      "Instagram",
+      "Facebook",
+      "Spotify"
+    ]
+  },
+  "websiteConfig": {
+    "title": "SAYRON MD BOT • Supreme Cyber AI",
+    "subtitle": "24/7 Heavy WhatsApp AI Bot & Multi-Device Automation Engine",
+    "description": "SAYRON MD BOT - Supreme 24/7 Heavy WhatsApp AI Bot developed by SUFYAN-X-IK.",
+    "announcement": "🔥 SAYRON MD Active • Developed by SUFYAN-X-IK",
+    "showAnnouncement": true,
+    "bannerUrl": "/src/assets/images/sayron_md_banner_1794054357635.jpg",
+    "contactPhone": "923464267218, 923708392045",
+    "channelUrl": "https://whatsapp.com/channel/https://whatsapp.com/channel/0029VbD2ggC9WtCAOvZlwe1I",
+    "theme": "cyberpunk-neon"
+  },
+  "songsPlaylist": [
+    {
+      "id": "song-1",
+      "title": "SAYRON Cyber Phonk (VIP Drift)",
+      "artist": "X-IK Beats • SUFYAN-X-IK",
+      "audioUrl": "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=phonk-drift-112269.mp3",
+      "coverUrl": "/sayron_md_banner.jpg",
+      "duration": "2:15",
+      "category": "Cyber Phonk"
+    },
+    {
+      "id": "song-2",
+      "title": "Neon Tokyo Midnight Lo-Fi",
+      "artist": "Cyber Dreamscape",
+      "audioUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=lofi-study-112191.mp3",
+      "coverUrl": "/sayron_md_banner.jpg",
+      "duration": "2:40",
+      "category": "Midnight Lo-Fi"
+    },
+    {
+      "id": "song-3",
+      "title": "Electronic Synthwave Overdrive",
+      "artist": "SAYRON MD Audio Core",
+      "audioUrl": "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=synthwave-80s-110045.mp3",
+      "coverUrl": "/sayron_md_banner.jpg",
+      "duration": "3:10",
+      "category": "Synthwave"
+    },
+    {
+      "id": "song-4",
+      "title": "Arabic Trap & Slowed Reverb",
+      "artist": "Sufyan Audio Lab",
+      "audioUrl": "https://cdn.pixabay.com/download/audio/2021/08/04/audio_bb630cc098.mp3?filename=middle-eastern-beat-9689.mp3",
+      "coverUrl": "/sayron_md_banner.jpg",
+      "duration": "2:30",
+      "category": "Slowed & Reverb"
+    }
+  ],
+  "sudoNumbers": [],
+  "customVars": {}
+}

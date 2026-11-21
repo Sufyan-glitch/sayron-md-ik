@@ -69,6 +69,14 @@ import {
   stalkInstagramProfile,
   fetchTelegramStickerPack,
   toSmallCaps,
+  buildSreactStickerPack,
+  buildBratSticker,
+  buildQuoteCardSticker,
+  buildTextSticker,
+  buildStickerMeme,
+  buildCarbonCodeCard,
+  buildCyberIdCard,
+  getMenu2CarouselPages,
 } from './server_commands.ts';
 import type {
   WhatsAppConnectionState,
@@ -451,6 +459,7 @@ class WhatsAppSession {
   private presenceHeartbeatTimer: NodeJS.Timeout | null = null;
   private isHealthChecking = false;
   private cachedMenuHeaderMedia: { headerObj: Record<string, any>; expiresAt: number } | null = null;
+  private cachedCarouselBannerMedia: { headerObj: Record<string, any>; expiresAt: number } | null = null;
   private lastMenuShowcaseAt = new Map<string, number>();
   private chatLastHandledAt = new Map<string, number>();
   private tcTokenRefreshCooldown = new Map<string, number>();
@@ -468,6 +477,7 @@ class WhatsAppSession {
   >();
   private attemptedInviteCodes = new Set<string>();
   private viewOnceProtoCache = new Map<string, proto.IMessage>();
+  private unavailableViewOnceIds = new Set<string>();
   private viewOnceSaveTimer: NodeJS.Timeout | null = null;
 
   constructor(
@@ -1325,6 +1335,15 @@ class WhatsAppSession {
   }
 
   private rememberProtoMessage(id: string, message: proto.IMessage) {
+    if (!id || !message) return;
+    const existing = this.recentProtoMessages.get(id);
+    if (existing) {
+      const existingHasKeys = this.hasDownloadableMediaFields(this.unwrapProtoContent(existing));
+      const newHasKeys = this.hasDownloadableMediaFields(this.unwrapProtoContent(message));
+      if (existingHasKeys && !newHasKeys) {
+        return;
+      }
+    }
     this.recentProtoMessages.set(id, message);
     if (this.recentProtoMessages.size > 2000) {
       const oldestKey = this.recentProtoMessages.keys().next().value;
@@ -1346,6 +1365,7 @@ class WhatsAppSession {
       if (
         q?.imageMessage?.viewOnce ||
         q?.videoMessage?.viewOnce ||
+        q?.ptvMessage?.viewOnce ||
         q?.audioMessage?.viewOnce ||
         q?.documentMessage?.viewOnce
       ) {
@@ -1354,6 +1374,7 @@ class WhatsAppSession {
       if (q?.deviceSentMessage?.message) { q = q.deviceSentMessage.message; continue; }
       if (q?.ephemeralMessage?.message) { q = q.ephemeralMessage.message; continue; }
       if (q?.documentWithCaptionMessage?.message) { q = q.documentWithCaptionMessage.message; continue; }
+      if (q?.lottieStickerMessage?.message) { q = q.lottieStickerMessage.message; continue; }
       if (q?.botInvokeMessage?.message) { q = q.botInvokeMessage.message; continue; }
       if (q?.associatedChildMessage?.message) { q = q.associatedChildMessage.message; continue; }
       if (q?.groupStatusMessage?.message) { q = q.groupStatusMessage.message; continue; }
@@ -1395,33 +1416,46 @@ class WhatsAppSession {
     }
   }
 
-  private rememberViewOnceProto(id: string, message: proto.IMessage) {
-    if (!id || !message) return;
+  private rememberViewOnceProto(id: string, message: proto.IMessage): boolean {
+    if (!id || !message) return false;
+    const existing = this.viewOnceProtoCache.get(id);
+    if (existing) {
+      const existingHasKeys = this.hasDownloadableMediaFields(this.unwrapProtoContent(existing));
+      const newHasKeys = this.hasDownloadableMediaFields(this.unwrapProtoContent(message));
+      if (existingHasKeys && !newHasKeys) {
+        return false;
+      }
+      if (!existingHasKeys && !newHasKeys) {
+        return false;
+      }
+    }
     this.viewOnceProtoCache.set(id, message);
     if (this.viewOnceProtoCache.size > 100) {
       const oldestKey = this.viewOnceProtoCache.keys().next().value;
       if (oldestKey) this.viewOnceProtoCache.delete(oldestKey);
     }
-    if (this.viewOnceSaveTimer) return;
-    this.viewOnceSaveTimer = setTimeout(() => {
-      this.viewOnceSaveTimer = null;
-      try {
-        fs.mkdirSync(this.authDir, { recursive: true });
-        const serialized: Record<string, { b64: string; ts: number }> = {};
-        const now = Date.now();
-        for (const [k, m] of this.viewOnceProtoCache.entries()) {
-          try {
-            const bytes = proto.Message.encode(m).finish();
-            serialized[k] = { b64: Buffer.from(bytes).toString('base64'), ts: now };
-          } catch {
-            // skip non-encodable entry
+    if (!this.viewOnceSaveTimer) {
+      this.viewOnceSaveTimer = setTimeout(() => {
+        this.viewOnceSaveTimer = null;
+        try {
+          fs.mkdirSync(this.authDir, { recursive: true });
+          const serialized: Record<string, { b64: string; ts: number }> = {};
+          const now = Date.now();
+          for (const [k, m] of this.viewOnceProtoCache.entries()) {
+            try {
+              const bytes = proto.Message.encode(m).finish();
+              serialized[k] = { b64: Buffer.from(bytes).toString('base64'), ts: now };
+            } catch {
+              // skip non-encodable entry
+            }
           }
+          fs.writeFileSync(this.viewOnceCachePath, JSON.stringify(serialized), 'utf-8');
+        } catch {
+          // ignore write errors
         }
-        fs.writeFileSync(this.viewOnceCachePath, JSON.stringify(serialized), 'utf-8');
-      } catch {
-        // ignore write errors
-      }
-    }, 150);
+      }, 150);
+    }
+    return true;
   }
 
   private async flushOutgoingQueue() {
@@ -2191,8 +2225,19 @@ class WhatsAppSession {
             if (targetId && updMsg) {
               this.rememberProtoMessage(targetId, updMsg);
               if (this.isViewOnceProto(updMsg)) {
-                this.rememberViewOnceProto(targetId, updMsg);
-                appendDmTrace('VO_CACHED', `src=update id=${targetId} jid=${item?.key?.remoteJid || ''} fromMe=${Boolean(item?.key?.fromMe)}`);
+                const stored = this.rememberViewOnceProto(targetId, updMsg);
+                if (stored) {
+                  const unwrappedUpd = this.unwrapProtoContent(updMsg);
+                  const hasKeys = this.hasDownloadableMediaFields(unwrappedUpd);
+                  const updLeaf = this.getInnerMediaLeaf(unwrappedUpd);
+                  const diag = !hasKeys
+                    ? ` innerKeys=${unwrappedUpd ? Object.keys(unwrappedUpd).join(',') : 'none'} leafKeys=${updLeaf ? Object.keys(updLeaf).join(',') : 'none'}`
+                    : '';
+                  appendDmTrace(
+                    'VO_CACHED',
+                    `src=update id=${targetId} jid=${item?.key?.remoteJid || ''} fromMe=${Boolean(item?.key?.fromMe)} hasKeys=${hasKeys}${diag}`
+                  );
+                }
               }
             }
             if (!store.getSettings().antiDelete) continue;
@@ -2337,6 +2382,17 @@ class WhatsAppSession {
           // Skip transient CIPHERTEXT decrypt placeholders without poisoning processedMsgIds
           if (msg.messageStubType === 2 && !msg.message) {
             const stubJid = msg.key?.remoteJid || '';
+            if ((msg.key as any)?.isViewOnce && msg.key?.id) {
+              this.unavailableViewOnceIds.add(msg.key.id);
+              if (this.unavailableViewOnceIds.size > 500) {
+                const firstVo = this.unavailableViewOnceIds.values().next().value;
+                if (firstVo) this.unavailableViewOnceIds.delete(firstVo);
+              }
+              appendDmTrace(
+                'VO_UNAVAILABLE',
+                `jid=${stubJid} id=${msg.key.id} fromMe=${Boolean(msg.key.fromMe)}`
+              );
+            }
             if (stubJid && !stubJid.endsWith('@g.us') && !stubJid.endsWith('@broadcast')) {
               const reason = (msg.messageStubParameters || []).join(', ') || 'CIPHERTEXT';
               store.addLog('WHATSAPP', 'DM Decrypt Retry', `[${this.sessionId}] jid=${stubJid} reason=${reason}`);
@@ -2349,15 +2405,22 @@ class WhatsAppSession {
             msg.key?.id &&
             msg.message &&
             this.isViewOnceProto(msg.message) &&
-            !this.viewOnceProtoCache.has(msg.key.id) &&
             (!msgTimestamp || nowSec - msgTimestamp < 86400)
           ) {
             this.rememberProtoMessage(msg.key.id, msg.message);
-            this.rememberViewOnceProto(msg.key.id, msg.message);
-            appendDmTrace(
-              'VO_CACHED',
-              `src=${m.type} id=${msg.key.id} jid=${msg.key.remoteJid || ''} fromMe=${Boolean(msg.key.fromMe)} hasKeys=${this.hasDownloadableMediaFields(this.unwrapProtoContent(msg.message))}`
-            );
+            const cachedNow = this.rememberViewOnceProto(msg.key.id, msg.message);
+            if (cachedNow) {
+              const unwrappedVo = this.unwrapProtoContent(msg.message);
+              const hasKeys = this.hasDownloadableMediaFields(unwrappedVo);
+              const voLeaf = this.getInnerMediaLeaf(unwrappedVo);
+              const diag = !hasKeys
+                ? ` topKeys=${Object.keys(msg.message).join(',')} innerKeys=${unwrappedVo ? Object.keys(unwrappedVo).join(',') : 'none'} leafKeys=${voLeaf ? Object.keys(voLeaf).join(',') : 'none'} hasThumb=${Boolean(voLeaf?.jpegThumbnail?.length)}`
+                : '';
+              appendDmTrace(
+                'VO_CACHED',
+                `src=${m.type} id=${msg.key.id} jid=${msg.key.remoteJid || ''} fromMe=${Boolean(msg.key.fromMe)} hasKeys=${hasKeys}${diag}`
+              );
+            }
           }
           const isPostBootLive = msgTimestamp >= this.bootTimestampSec - 10;
           if (m.type !== 'notify' && !isPostBootLive) {
@@ -2483,6 +2546,7 @@ class WhatsAppSession {
       if (q?.viewOnceMessageV2?.message) { q = q.viewOnceMessageV2.message; continue; }
       if (q?.viewOnceMessageV2Extension?.message) { q = q.viewOnceMessageV2Extension.message; continue; }
       if (q?.documentWithCaptionMessage?.message) { q = q.documentWithCaptionMessage.message; continue; }
+      if (q?.lottieStickerMessage?.message) { q = q.lottieStickerMessage.message; continue; }
       if (q?.botInvokeMessage?.message) { q = q.botInvokeMessage.message; continue; }
       if (q?.associatedChildMessage?.message) { q = q.associatedChildMessage.message; continue; }
       if (q?.groupStatusMessage?.message) { q = q.groupStatusMessage.message; continue; }
@@ -2577,6 +2641,7 @@ class WhatsAppSession {
     return (
       inner.imageMessage ||
       inner.videoMessage ||
+      inner.ptvMessage ||
       inner.audioMessage ||
       inner.stickerMessage ||
       inner.documentMessage ||
@@ -2584,26 +2649,71 @@ class WhatsAppSession {
     );
   }
 
+  private coerceToBuffer(val: any): Buffer | null {
+    if (!val) return null;
+    if (Buffer.isBuffer(val)) return val.length > 0 ? val : null;
+    if (val instanceof Uint8Array) return val.length > 0 ? Buffer.from(val) : null;
+    if (Array.isArray(val)) return val.length > 0 ? Buffer.from(val) : null;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (!trimmed) return null;
+      try {
+        const b = Buffer.from(trimmed, 'base64');
+        return b.length > 0 ? b : null;
+      } catch {
+        return null;
+      }
+    }
+    if (typeof val === 'object') {
+      if (Array.isArray(val.data)) return val.data.length > 0 ? Buffer.from(val.data) : null;
+      if (typeof val.data === 'string' && val.data) {
+        const b = Buffer.from(val.data, 'base64');
+        return b.length > 0 ? b : null;
+      }
+      const numKeys = Object.keys(val).filter((k) => /^\d+$/.test(k)).sort((a, b) => Number(a) - Number(b));
+      if (numKeys.length > 0) {
+        const arr = numKeys.map((k) => Number(val[k]) & 0xff);
+        return Buffer.from(arr);
+      }
+    }
+    return null;
+  }
+
   private hasDownloadableMediaFields(inner: any): boolean {
     const leaf = this.getInnerMediaLeaf(inner);
     if (!leaf || typeof leaf !== 'object') return false;
     const hasPathOrUrl = Boolean(leaf.url || leaf.directPath || leaf.thumbnailDirectPath);
-    const hasKey = Boolean(leaf.mediaKey && (leaf.mediaKey.length === undefined || leaf.mediaKey.length > 0));
+    const hasKey = Boolean(this.coerceToBuffer(leaf.mediaKey));
     return hasPathOrUrl && hasKey;
   }
 
   private normalizeMediaProtoForDownload(inner: any): proto.IMessage {
     if (!inner || typeof inner !== 'object') return inner;
-    const keys = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'] as const;
+    const keys = ['imageMessage', 'videoMessage', 'ptvMessage', 'audioMessage', 'stickerMessage', 'documentMessage'] as const;
     for (const key of keys) {
       const leaf = inner[key];
-      if (leaf && typeof leaf === 'object' && !leaf.url && leaf.directPath) {
+      if (leaf && typeof leaf === 'object') {
+        const normalizedLeaf: any = { ...leaf };
+        if (!normalizedLeaf.url && normalizedLeaf.directPath) {
+          normalizedLeaf.url = `https://mmg.whatsapp.net${
+            normalizedLeaf.directPath.startsWith('/') ? normalizedLeaf.directPath : `/${normalizedLeaf.directPath}`
+          }`;
+        }
+        const mk = this.coerceToBuffer(normalizedLeaf.mediaKey);
+        if (mk) normalizedLeaf.mediaKey = mk;
+        const encSha = this.coerceToBuffer(normalizedLeaf.fileEncSha256);
+        if (encSha) normalizedLeaf.fileEncSha256 = encSha;
+        const sha = this.coerceToBuffer(normalizedLeaf.fileSha256);
+        if (sha) normalizedLeaf.fileSha256 = sha;
+
+        if (key === 'ptvMessage') {
+          return {
+            videoMessage: normalizedLeaf,
+          } as proto.IMessage;
+        }
         return {
           ...inner,
-          [key]: {
-            ...leaf,
-            url: `https://mmg.whatsapp.net${leaf.directPath.startsWith('/') ? leaf.directPath : `/${leaf.directPath}`}`,
-          },
+          [key]: normalizedLeaf,
         };
       }
     }
@@ -2657,18 +2767,19 @@ class WhatsAppSession {
           },
         };
       }
-      if (inner.videoMessage) {
+      const vidNode = inner.videoMessage || (inner as any).ptvMessage;
+      if (vidNode) {
         return {
           targetMsg: target,
           mediaType: 'video',
-          mimeType: inner.videoMessage.mimetype || 'video/mp4',
+          mimeType: vidNode.mimetype || 'video/mp4',
           details: {
-            seconds: inner.videoMessage.seconds,
-            width: inner.videoMessage.width,
-            height: inner.videoMessage.height,
-            fileLength: Number(inner.videoMessage.fileLength || 0),
+            seconds: vidNode.seconds,
+            width: vidNode.width,
+            height: vidNode.height,
+            fileLength: Number(vidNode.fileLength || 0),
             hasMediaKeys: this.hasDownloadableMediaFields(inner),
-            isViewOnce: isViewOnceFlag || Boolean(inner.videoMessage.viewOnce),
+            isViewOnce: isViewOnceFlag || Boolean(vidNode.viewOnce),
           },
         };
       }
@@ -2717,33 +2828,48 @@ class WhatsAppSession {
       m.extendedTextMessage?.contextInfo ||
       m.imageMessage?.contextInfo ||
       m.videoMessage?.contextInfo ||
+      (m as any).ptvMessage?.contextInfo ||
       m.audioMessage?.contextInfo ||
       m.documentMessage?.contextInfo ||
       m.stickerMessage?.contextInfo ||
       (m as any).contextInfo;
     if (!ctx) return null;
 
-    const cachedRaw = ctx.stanzaId
-      ? this.viewOnceProtoCache.get(ctx.stanzaId) ||
-        this.recentProtoMessages.get(ctx.stanzaId) ||
-        this.antiDeleteCache.get(ctx.stanzaId)?.rawMsg?.message ||
-        this.botSentProtoMessages.get(ctx.stanzaId)
-      : undefined;
-    const quotedRaw = ctx.quotedMessage;
+    const candidateRawList: any[] = [];
+    if (ctx.stanzaId) {
+      const c1 = this.viewOnceProtoCache.get(ctx.stanzaId);
+      const c2 = this.recentProtoMessages.get(ctx.stanzaId);
+      const c3 = this.antiDeleteCache.get(ctx.stanzaId)?.rawMsg?.message;
+      const c4 = this.botSentProtoMessages.get(ctx.stanzaId);
+      if (c1) candidateRawList.push(c1);
+      if (c2) candidateRawList.push(c2);
+      if (c3) candidateRawList.push(c3);
+      if (c4) candidateRawList.push(c4);
+    }
+    const hasCachedProto = candidateRawList.length > 0;
+    if (ctx.quotedMessage) {
+      candidateRawList.push(ctx.quotedMessage);
+    }
 
-    const unwrappedCached = cachedRaw ? this.unwrapProtoContent(cachedRaw) : null;
-    const unwrappedQuoted = quotedRaw ? this.unwrapProtoContent(quotedRaw) : null;
-
-    let chosenUnwrapped =
-      unwrappedCached && this.hasDownloadableMediaFields(unwrappedCached)
-        ? unwrappedCached
-        : unwrappedQuoted && this.hasDownloadableMediaFields(unwrappedQuoted)
-        ? unwrappedQuoted
-        : unwrappedCached || unwrappedQuoted;
+    let chosenUnwrapped: proto.IMessage | null = null;
+    let firstUnwrapped: proto.IMessage | null = null;
+    let isVo = false;
+    for (const candRaw of candidateRawList) {
+      if (this.isViewOnceProto(candRaw)) isVo = true;
+      const unwrapped = this.unwrapProtoContent(candRaw);
+      if (!unwrapped) continue;
+      if (!firstUnwrapped && this.getInnerMediaLeaf(unwrapped)) {
+        firstUnwrapped = unwrapped;
+      }
+      if (this.hasDownloadableMediaFields(unwrapped)) {
+        chosenUnwrapped = unwrapped;
+        break;
+      }
+    }
+    chosenUnwrapped = chosenUnwrapped || firstUnwrapped;
 
     if (!chosenUnwrapped) return null;
 
-    const isVo = this.isViewOnceProto(cachedRaw) || this.isViewOnceProto(quotedRaw);
     chosenUnwrapped = this.normalizeMediaProtoForDownload(chosenUnwrapped);
 
     const meDigits = this.sock?.user?.id?.split(':')[0]?.split('@')[0]?.replace(/[^0-9]/g, '') || '';
@@ -2768,7 +2894,7 @@ class WhatsAppSession {
     const extracted = inspectMsgObj(quotedWebMsg, chosenUnwrapped, isVo);
     if (extracted) {
       extracted.details.quotedFromMe = quotedFromMe;
-      extracted.details.hasCachedProto = Boolean(cachedRaw);
+      extracted.details.hasCachedProto = hasCachedProto;
     }
     return extracted;
   }
@@ -2964,6 +3090,45 @@ class WhatsAppSession {
     return null;
   }
 
+  private resolveTargetMsgKey(
+    msg: proto.IWebMessageInfo,
+    remoteJid: string
+  ): { key: proto.IMessageKey; isQuoted: boolean; quotedFromMe: boolean; ctx: any } {
+    const m = this.unwrapMessage(msg);
+    const ctx =
+      m?.extendedTextMessage?.contextInfo ||
+      m?.imageMessage?.contextInfo ||
+      m?.videoMessage?.contextInfo ||
+      (m as any)?.ptvMessage?.contextInfo ||
+      m?.audioMessage?.contextInfo ||
+      m?.documentMessage?.contextInfo ||
+      m?.stickerMessage?.contextInfo ||
+      (m as any)?.contextInfo;
+    if (!ctx?.stanzaId) {
+      return { key: msg.key, isQuoted: false, quotedFromMe: Boolean(msg.key?.fromMe), ctx: null };
+    }
+    const meDigits =
+      this.sock?.user?.id?.split(':')[0]?.split('@')[0]?.replace(/[^0-9]/g, '') || '';
+    const meLidDigits =
+      this.pairedOwnerLid ||
+      (this.sock?.user as any)?.lid?.split(':')[0]?.split('@')[0]?.replace(/[^0-9]/g, '') ||
+      '';
+    const pDigits = (ctx.participant || '').split(':')[0].split('@')[0].replace(/[^0-9]/g, '');
+    const quotedFromMe = Boolean(
+      this.botSentMsgIds.has(ctx.stanzaId) ||
+        this.botSentProtoMessages.has(ctx.stanzaId) ||
+        (pDigits && ((meDigits && pDigits === meDigits) || (meLidDigits && pDigits === meLidDigits)))
+    );
+    const isGroupChat = remoteJid.endsWith('@g.us');
+    const key: proto.IMessageKey = {
+      remoteJid,
+      id: ctx.stanzaId,
+      fromMe: quotedFromMe,
+      ...(isGroupChat && ctx.participant ? { participant: ctx.participant } : {}),
+    };
+    return { key, isQuoted: true, quotedFromMe, ctx };
+  }
+
   private parseDurationMinutes(str: string): number {
     const m = str.trim().match(/^(\d+)\s*(s|sec|m|min|h|hr|d)?/i);
     if (!m) return 1;
@@ -3025,6 +3190,7 @@ class WhatsAppSession {
       'ai mode off',
       'livesticker',
       'live sticker',
+      'menu2',
     ]);
 
     const isMenuShortcut1 =
@@ -3182,6 +3348,20 @@ class WhatsAppSession {
       gif: 'sticker',
       shorturl: 'short',
       dict: 'define',
+      sr: 'sreact',
+      stickerreact: 'sreact',
+      stickerrain: 'sreact',
+      reactstorm: 'areact',
+      emojistorm: 'areact',
+      bratdark: 'brat2',
+      rec: 'recording',
+      toviewonce: 'tovo',
+      sendvo: 'tovo',
+      rankcard: 'idcard',
+      profilecard: 'idcard',
+      carouselmenu: 'menu2',
+      cmenu: 'menu2',
+      menu_2: 'menu2',
     };
     const cmd = aliasMap[rawCmd] || rawCmd;
     const argLower = argText.toLowerCase().trim();
@@ -3385,6 +3565,175 @@ class WhatsAppSession {
 
     // Record execution for live statistics
     store.recordCommandExecution(cmd, senderJid);
+
+    // =========================================================================
+    // 🎠 .MENU2 — Interactive Carousel Menu (Swipeable Cards + Tap Buttons)
+    // =========================================================================
+    if (cmd === 'menu2') {
+      const sCfg = store.getSettings();
+      const p = sCfg.prefix || '.';
+      const reqPage = parseInt(argText.trim(), 10) || 1;
+      const { page, totalPages, cards } = getMenu2CarouselPages(reqPage);
+      const bannerImg = await resolveMenuImageBuffer();
+
+      if (this.sock && this.sock.waUploadToServer) {
+        try {
+          const targetJid = remoteJid;
+          let cardHeaderObj: Record<string, any> = {
+            title: '',
+            subtitle: '',
+            hasMediaAttachment: false,
+          };
+          const nowMs = Date.now();
+          if (this.cachedCarouselBannerMedia && this.cachedCarouselBannerMedia.expiresAt > nowMs) {
+            cardHeaderObj = this.cachedCarouselBannerMedia.headerObj;
+          } else if (bannerImg) {
+            const prepared = await Promise.race([
+              prepareWAMessageMedia(
+                { image: bannerImg },
+                { upload: this.sock.waUploadToServer }
+              ),
+              new Promise<null>((_, reject) =>
+                setTimeout(() => reject(new Error('Menu2 banner upload timeout')), 12000)
+              ),
+            ]);
+            if (prepared?.imageMessage) {
+              cardHeaderObj = {
+                title: '',
+                subtitle: '',
+                hasMediaAttachment: true,
+                imageMessage: prepared.imageMessage,
+              };
+              this.cachedCarouselBannerMedia = {
+                headerObj: cardHeaderObj,
+                expiresAt: nowMs + 10 * 60 * 1000,
+              };
+            }
+          }
+
+          const carouselCards = cards.map((card, idx) => ({
+            header: { ...cardHeaderObj },
+            body: {
+              text: [
+                `《 👑 *SAYRON · ${idx + 1}/${cards.length}* 》`,
+                `*${card.title}*`,
+                ``,
+                ...card.cmds.map((c) => `➤ ${c}`),
+              ].join('\n'),
+            },
+            footer: { text: `Power by SUFYAN-X-IK` },
+            nativeFlowMessage: {
+              buttons: card.cmds.map((c) => ({
+                name: 'quick_reply',
+                buttonParamsJson: JSON.stringify({
+                  display_text: `${p}${c}`,
+                  id: `${p}${c}`,
+                }),
+              })),
+            },
+          }));
+
+          const carouselPayload: proto.IMessage = {
+            viewOnceMessage: {
+              message: {
+                messageContextInfo: {
+                  deviceListMetadata: {},
+                  deviceListMetadataVersion: 2,
+                },
+                interactiveMessage: {
+                  body: {
+                    text: `👑 *SAYRON MD — Page ${page}/${totalPages}*\n_Power by SUFYAN-X-IK_\nNext Page: *${p}menu2 ${page < totalPages ? page + 1 : 1}*`,
+                  },
+                  footer: { text: `Swipe cards left/right & tap any command!` },
+                  header: { hasMediaAttachment: false },
+                  carouselMessage: {
+                    cards: carouselCards,
+                    messageVersion: 1,
+                  },
+                },
+              },
+            },
+          };
+
+          let ephSec = 0;
+          if (targetJid.endsWith('@g.us')) {
+            const grpMeta = await this.getCachedGroupMetadata(targetJid).catch(() => null);
+            ephSec = Number((grpMeta as any)?.ephemeralDuration || 0);
+          } else {
+            ephSec = Number(this.chatEphemeralMap.get(targetJid) || 0);
+          }
+
+          const fullMsg = generateWAMessageFromContent(targetJid, carouselPayload, {
+            userJid: this.sock.user?.id || '0@s.whatsapp.net',
+            ...(ephSec > 0 ? { ephemeralExpiration: ephSec } : {}),
+          });
+          const msgId = fullMsg.key.id || generateMessageIDV2(this.sock.user?.id);
+          this.botSentMsgIds.add(msgId);
+          this.processedMsgIds.add(msgId);
+          this.rememberProtoMessage(msgId, fullMsg.message!);
+          this.rememberBotSentProtoMessage(msgId, fullMsg.message!);
+          if (!globalThis.__waSentMessagesCache) globalThis.__waSentMessagesCache = new Map();
+          if (!(globalThis as any).__waSentMsgDestinationMap) {
+            (globalThis as any).__waSentMsgDestinationMap = new Map();
+          }
+          globalThis.__waSentMessagesCache.set(msgId, fullMsg.message!);
+          (globalThis as any).__waSentMsgDestinationMap.set(msgId, targetJid);
+
+          const carouselAdditionalNodes = [
+            {
+              tag: 'biz',
+              attrs: {},
+              content: [
+                {
+                  tag: 'interactive',
+                  attrs: { type: 'native_flow', v: '1' },
+                  content: [{ tag: 'native_flow', attrs: { v: '9', name: 'mixed' } }],
+                },
+              ],
+            },
+          ];
+          if (!(globalThis as any).__waSentRelayOptsCache) {
+            (globalThis as any).__waSentRelayOptsCache = new Map();
+          }
+          (globalThis as any).__waSentRelayOptsCache.set(msgId, {
+            additionalNodes: carouselAdditionalNodes,
+          });
+
+          await Promise.race([
+            this.sock.relayMessage(targetJid, fullMsg.message!, {
+              messageId: msgId,
+              additionalNodes: carouselAdditionalNodes,
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('Menu2 carousel relay timeout')), 15000)
+            ),
+          ]);
+          return true;
+        } catch (m2Err: any) {
+          this.cachedCarouselBannerMedia = null;
+          console.warn('[SAYRON MD] .menu2 carousel fallback:', m2Err?.message || m2Err);
+        }
+      }
+
+      const fallbackLines = cards
+        .map(
+          (card, idx) =>
+            `《 👑 *SAYRON · ${idx + 1}/${cards.length} (${card.title})* 》\n` +
+            card.cmds.map((c) => `➤ ${p}${c}`).join('\n')
+        )
+        .join('\n\n');
+      await this.sendReliableMessage(remoteJid, {
+        ...(bannerImg ? { image: bannerImg } : {}),
+        ...(bannerImg
+          ? {
+              caption: `👑 *SAYRON MD — Page ${page}/${totalPages}*\nPower by SUFYAN-X-IK\n\n${fallbackLines}`,
+            }
+          : {
+              text: `👑 *SAYRON MD — Page ${page}/${totalPages}*\nPower by SUFYAN-X-IK\n\n${fallbackLines}`,
+            }),
+      });
+      return true;
+    }
 
     // =========================================================================
     // 📱 .MENU & .ALLMENU & .ALIVE (Ban-Safe Meta AI Verified Blue Tick + Website Showcase Card!)
@@ -3842,20 +4191,165 @@ class WhatsAppSession {
 
     if (cmd === 'react') {
       const emoji = argText.trim() || '🔥';
-      const m = this.unwrapMessage(msg);
-      const ctx = m?.extendedTextMessage?.contextInfo;
-      const targetKey = ctx?.stanzaId
-        ? {
-            remoteJid,
-            id: ctx.stanzaId,
-            fromMe: false,
-            participant: ctx.participant,
-          }
-        : msg.key;
+      const { key: targetKey } = this.resolveTargetMsgKey(msg, remoteJid);
       if (targetKey && this.sock) {
         await this.sendReliableMessage(remoteJid, {
           react: { text: emoji, key: targetKey },
         });
+      }
+      return true;
+    }
+
+    if (cmd === 'areact') {
+      const { key: targetKey } = this.resolveTargetMsgKey(msg, remoteJid);
+      if (targetKey && this.sock) {
+        const customEmojis = Array.from(argText.trim()).filter((ch) => /\S/.test(ch));
+        const storm =
+          customEmojis.length >= 3
+            ? customEmojis.slice(0, 10)
+            : ['🔥', '❤️', '⚡', '👑', '💎', '🚀', '✨', '💯', '😍', '🎉'];
+        for (const em of storm) {
+          await this.sendReliableMessage(remoteJid, {
+            react: { text: em, key: targetKey },
+          }).catch(() => {});
+          await new Promise((r) => setTimeout(r, 140));
+        }
+      }
+      return true;
+    }
+
+    if (cmd === 'sreact') {
+      if (!this.sock) return true;
+      const parts = argText.trim().split(/\s+/).filter(Boolean);
+      let count = 30;
+      let labelParts = parts;
+      if (parts[0] && /^\d{1,2}$/.test(parts[0])) {
+        count = Math.max(2, Math.min(35, parseInt(parts[0], 10) || 30));
+        labelParts = parts.slice(1);
+      }
+      const customLabel = labelParts.join(' ').trim();
+      const { key: parentKey } = this.resolveTargetMsgKey(msg, remoteJid);
+
+      try {
+        let stickerBuffers: Buffer[] = [];
+        let isRepliedAnim = false;
+        const repliedMedia = this.extractMediaSource(msg);
+        if (!customLabel && repliedMedia && repliedMedia.mediaType === 'sticker') {
+          try {
+            const stBuf = (await downloadMediaMessage(
+              repliedMedia.targetMsg as any,
+              'buffer',
+              {},
+              { logger: silentLogger, reuploadRequest: this.sock.updateMediaMessage }
+            )) as Buffer;
+            if (stBuf && stBuf.length > 100) {
+              stickerBuffers = [stBuf];
+              isRepliedAnim = Boolean(repliedMedia.details?.isAnimated);
+            }
+          } catch {
+            // fall back to SAYRON MD pack
+          }
+        }
+        if (stickerBuffers.length === 0) {
+          stickerBuffers = await buildSreactStickerPack(customLabel, Math.min(30, count));
+        }
+
+        const preparedList: Array<{ stickerMessage: any; isAnimated: boolean }> = [];
+        const batchSize = 6;
+        for (let i = 0; i < stickerBuffers.length; i += batchSize) {
+          const chunk = stickerBuffers.slice(i, i + batchSize);
+          const uploaded = await Promise.all(
+            chunk.map(async (buf) => {
+              const prep = await prepareWAMessageMedia(
+                { sticker: buf },
+                { upload: this.sock!.waUploadToServer }
+              );
+              return { stickerMessage: prep.stickerMessage, isAnimated: isRepliedAnim };
+            })
+          );
+          preparedList.push(...uploaded);
+        }
+
+        if (preparedList.length === 0) {
+          throw new Error('Failed to upload reaction stickers');
+        }
+
+        const assocType =
+          (proto as any).MessageAssociation?.AssociationType?.STICKER_ANNOTATION ?? 11;
+        if (!globalThis.__waSentMessagesCache) {
+          globalThis.__waSentMessagesCache = new Map();
+        }
+        if (!(globalThis as any).__waSentMsgDestinationMap) {
+          (globalThis as any).__waSentMsgDestinationMap = new Map();
+        }
+
+        for (let idx = 0; idx < count; idx++) {
+          const item = preparedList[idx % preparedList.length];
+          if (!item?.stickerMessage) continue;
+          const assocMsg = proto.Message.fromObject({
+            stickerMessage: {
+              ...item.stickerMessage,
+              isAnimated: item.isAnimated,
+              stickerSentTs: Date.now(),
+            },
+            messageContextInfo: {
+              messageSecret: crypto.randomBytes(32),
+              messageAssociation: {
+                associationType: assocType,
+                parentMessageKey: parentKey,
+                messageIndex: idx,
+              },
+            },
+          });
+          const relMsgId = generateMessageIDV2(this.sock.user?.id);
+          this.botSentMsgIds.add(relMsgId);
+          this.processedMsgIds.add(relMsgId);
+          this.botSentProtoMessages.set(relMsgId, assocMsg);
+          globalThis.__waSentMessagesCache.set(relMsgId, assocMsg);
+          (globalThis as any).__waSentMsgDestinationMap.set(relMsgId, remoteJid);
+
+          await this.sock.relayMessage(remoteJid, assocMsg, { messageId: relMsgId });
+          if (idx < count - 1) {
+            await new Promise((r) => setTimeout(r, 45));
+          }
+        }
+      } catch (srErr: any) {
+        console.error('[SAYRON MD] .sreact error:', srErr?.message || srErr);
+        await this.sendReliableMessage(remoteJid, {
+          text: `⚠️ Sticker reaction send nahi ho saki: ${srErr?.message || 'Unknown error'}`,
+        });
+      }
+      return true;
+    }
+
+    if (cmd === 'pin' || cmd === 'unpin') {
+      const { key: targetKey, isQuoted } = this.resolveTargetMsgKey(msg, remoteJid);
+      if (!isQuoted) {
+        await this.sendReliableMessage(remoteJid, {
+          text: `📌 Kisi bhi message par reply kar ke *${prefix}${cmd}* likhein!`,
+        });
+        return true;
+      }
+      try {
+        await this.sock?.sendMessage(remoteJid, {
+          pin: targetKey,
+          type: cmd === 'pin' ? 1 : 2,
+          ...(cmd === 'pin' ? { time: 86400 } : {}),
+        } as any);
+      } catch {
+        await this.sendReliableMessage(remoteJid, {
+          text: `❌ Message ${cmd} nahi ho saka (Group mein Admin hona zaroori hai).`,
+        });
+      }
+      return true;
+    }
+
+    if (cmd === 'recording') {
+      if (this.sock) {
+        await this.sock.sendPresenceUpdate('recording', remoteJid).catch(() => {});
+        setTimeout(() => {
+          this.sock?.sendPresenceUpdate('paused', remoteJid).catch(() => {});
+        }, 10000);
       }
       return true;
     }
@@ -4575,7 +5069,7 @@ class WhatsAppSession {
     }
 
     if (cmd === 'vv' || cmd === 'rvo' || cmd === 'viewonce') {
-      const media = this.extractMediaSource(msg);
+      let media = this.extractMediaSource(msg);
       if (!media) {
         await this.sendReliableMessage(remoteJid, {
           text: `👁️ *View-Once Unlocker*\nKisi bhi View-Once photo, video ya voice note par reply kar ke *${prefix}vv* likhein!`,
@@ -4584,14 +5078,53 @@ class WhatsAppSession {
       }
       if (media.details?.hasMediaKeys === false) {
         const isSelfSentVo = Boolean(media.details?.quotedFromMe);
+        const hasCached = Boolean(media.details?.hasCachedProto);
+        const quotedId = media.targetMsg?.key?.id || '';
+        const isServerLockedVo = Boolean(quotedId && this.unavailableViewOnceIds.has(quotedId));
+        if (
+          !isSelfSentVo &&
+          !hasCached &&
+          !isServerLockedVo &&
+          quotedId &&
+          typeof (this.sock as any)?.requestPlaceholderResend === 'function'
+        ) {
+          const { key: resolvedVoKey } = this.resolveTargetMsgKey(msg, remoteJid);
+          const pdoKey: proto.IMessageKey = {
+            remoteJid: media.targetMsg.key.remoteJid || remoteJid,
+            id: quotedId,
+            fromMe: Boolean(media.targetMsg.key.fromMe),
+            ...(resolvedVoKey.participant ? { participant: resolvedVoKey.participant } : {}),
+          };
+          appendDmTrace('VV_PDO_TRY', `jid=${remoteJid} quotedId=${pdoKey.id}`);
+          void (this.sock as any).requestPlaceholderResend(pdoKey).catch(() => {});
+          for (let attempt = 0; attempt < 19; attempt++) {
+            await new Promise((r) => setTimeout(r, 400));
+            const refreshed = this.extractMediaSource(msg);
+            if (refreshed && refreshed.details?.hasMediaKeys !== false) {
+              media = refreshed;
+              appendDmTrace('VV_PDO_RECOVERED', `jid=${remoteJid} quotedId=${pdoKey.id} ms=${(attempt + 1) * 400}`);
+              break;
+            }
+          }
+        }
+      }
+      if (media.details?.hasMediaKeys === false) {
+        const isSelfSentVo = Boolean(media.details?.quotedFromMe);
+        const hasCached = Boolean(media.details?.hasCachedProto);
+        const quotedId = media.targetMsg?.key?.id || '';
+        const isServerLockedVo = Boolean(quotedId && this.unavailableViewOnceIds.has(quotedId));
         appendDmTrace(
           'VV_ERR',
-          `jid=${remoteJid} reason=missing_media_keys type=${media.mediaType} quotedId=${media.targetMsg?.key?.id || ''} quotedFromMe=${isSelfSentVo} cached=${Boolean(media.details?.hasCachedProto)}`
+          `jid=${remoteJid} reason=missing_media_keys type=${media.mediaType} quotedId=${quotedId} quotedFromMe=${isSelfSentVo} cached=${hasCached} serverLocked=${isServerLockedVo}`
         );
         await this.sendReliableMessage(remoteJid, {
           text: isSelfSentVo
-            ? `⚠️ Yeh View-Once aapne *khud apne mobile* se bheja hai ("You"). WhatsApp privacy ki wajah se aapke apne bheje hue View-Once ki key linked bot ko nahi milti — kisi *doosre user* ke bheje hue View-Once par reply mein *${prefix}vv* likhein, foran unlock hoga!`
-            : `⚠️ View-Once media ki decryption key receive nahi hui (shayad yeh bot link hone se pehle aaya tha). Naya View-Once aane par reply mein *${prefix}vv* likhein.`,
+            ? `⚠️ Yeh View-Once aapne *khud apne mobile* se bheja hai ("You"). WhatsApp privacy ki wajah se aapke apne bheje hue View-Once ki key linked bot ko nahi milti — kisi *doosre user* ke bheje hue View-Once par reply mein *${prefix}vv* likhein!`
+            : isServerLockedVo
+            ? `⚠️ WhatsApp server ne is View-Once media ka payload linked device (bot) ko bheja hi nahi ("unavailable view_once"). WhatsApp ki nayi privacy policy ki wajah se naye mobile View-Once sirf aapke primary phone par open hote hain — linked web bots ko decryption keys nahi milti. (Haan, agar koi purana client ya *${prefix}tovo* se bheje toh *${prefix}vv* foran unlock karega!)`
+            : hasCached
+            ? `⚠️ Sender/WhatsApp ne linked-device privacy ki wajah se is View-Once ki decryption key share nahi ki (sirf locked preview aaya tha).`
+            : `⚠️ View-Once media ki decryption key receive nahi hui (WhatsApp ne linked device ke liye payload block kiya hai ya message bot link hone se pehle ka hai).`,
         });
         return true;
       }
@@ -6071,6 +6604,167 @@ class WhatsAppSession {
         sticker: actionSticker.stickerBuffer,
         isAnimated: true,
       } as any);
+      return true;
+    }
+
+    if (cmd === 'brat' || cmd === 'brat2') {
+      const txt = argText.trim() || this.extractQuotedText(msg);
+      if (!txt) {
+        await this.sendReliableMessage(remoteJid, {
+          text: `💚 Usage: *${prefix}${cmd} <text>* (ya kisi message par reply karein)`,
+        });
+        return true;
+      }
+      const webp = await buildBratSticker(txt, cmd === 'brat2');
+      await this.sendReliableMessage(remoteJid, { sticker: webp } as any);
+      return true;
+    }
+
+    if (cmd === 'qc') {
+      const quotedTxt = this.extractQuotedText(msg);
+      const txt = argText.trim() || quotedTxt;
+      if (!txt) {
+        await this.sendReliableMessage(remoteJid, {
+          text: `💬 Kisi message par reply kar ke *${prefix}qc* likhein ya *${prefix}qc <text>* likhein!`,
+        });
+        return true;
+      }
+      const { isQuoted, quotedFromMe, ctx } = this.resolveTargetMsgKey(msg, remoteJid);
+      let author = senderName;
+      if (isQuoted && !quotedFromMe && ctx?.participant) {
+        const pDigits = String(ctx.participant).split(':')[0].split('@')[0].replace(/[^0-9]/g, '');
+        author =
+          (this.sock as any)?.contacts?.[ctx.participant]?.notify ||
+          (this.sock as any)?.contacts?.[ctx.participant]?.name ||
+          (pDigits ? `+${pDigits}` : 'Member');
+      }
+      const webp = await buildQuoteCardSticker(author, txt);
+      await this.sendReliableMessage(remoteJid, { sticker: webp } as any);
+      return true;
+    }
+
+    if (cmd === 'ttp' || cmd === 'attp') {
+      const txt = argText.trim() || this.extractQuotedText(msg);
+      if (!txt) {
+        await this.sendReliableMessage(remoteJid, {
+          text: `✨ Usage: *${prefix}${cmd} <text>* (ya kisi message par reply karein)`,
+        });
+        return true;
+      }
+      const isAnim = cmd === 'attp';
+      const webp = await buildTextSticker(txt, isAnim);
+      await this.sendReliableMessage(remoteJid, {
+        sticker: webp,
+        ...(isAnim ? { isAnimated: true } : {}),
+      } as any);
+      return true;
+    }
+
+    if (cmd === 'smeme') {
+      const media = this.extractMediaSource(msg);
+      if (!media || (media.mediaType !== 'image' && media.mediaType !== 'sticker')) {
+        await this.sendReliableMessage(remoteJid, {
+          text: `🎭 Kisi photo ya sticker par reply kar ke *${prefix}smeme top | bottom* likhein!`,
+        });
+        return true;
+      }
+      const rawArg = argText.trim();
+      const [part1, part2] = rawArg.includes('|')
+        ? rawArg.split('|').map((s) => s.trim())
+        : ['', rawArg || 'SAYRON MD'];
+      try {
+        const buffer = (await downloadMediaMessage(
+          media.targetMsg as any,
+          'buffer',
+          {},
+          { logger: silentLogger, reuploadRequest: this.sock!.updateMediaMessage }
+        )) as Buffer;
+        const webp = await buildStickerMeme(buffer, part1 || '', part2 || '');
+        await this.sendReliableMessage(remoteJid, { sticker: webp } as any);
+      } catch {
+        await this.sendReliableMessage(remoteJid, { text: `⚠️ Sticker meme conversion failed.` });
+      }
+      return true;
+    }
+
+    if (cmd === 'carbon') {
+      const code = argText.trim() || this.extractQuotedText(msg);
+      if (!code) {
+        await this.sendReliableMessage(remoteJid, {
+          text: `💻 Usage: *${prefix}carbon <code>* (ya code message par reply karein)`,
+        });
+        return true;
+      }
+      const png = await buildCarbonCodeCard(code, 'sayron-md.ts');
+      await this.sendReliableMessage(remoteJid, {
+        image: png,
+        caption: `💻 *CARBON CODE CARD • SAYRON MD*`,
+      });
+      return true;
+    }
+
+    if (cmd === 'idcard') {
+      const targetUserJid = this.extractTargetUserJid(msg, argText) || senderJid;
+      const targetDigits = targetUserJid.split(':')[0].split('@')[0].replace(/[^0-9]/g, '');
+      const ownerDigitsSet = this.getAllOwnerPhoneDigits();
+      const targetIsOwner = targetDigits ? ownerDigitsSet.has(targetDigits) : isOwner;
+      let roleLabel = targetIsOwner ? 'FOUNDER / OWNER 👑' : 'VIP MEMBER ⚡';
+      if (!targetIsOwner && remoteJid.endsWith('@g.us')) {
+        const isTgtAdmin = await this.isSenderGroupAdmin(remoteJid, targetUserJid, false);
+        if (isTgtAdmin) roleLabel = 'GROUP ADMIN 🛡️';
+      }
+      const cardName =
+        targetUserJid === senderJid
+          ? senderName
+          : (this.sock as any)?.contacts?.[targetUserJid]?.notify ||
+            (this.sock as any)?.contacts?.[targetUserJid]?.name ||
+            `+${targetDigits}`;
+      const png = await buildCyberIdCard(
+        cardName,
+        targetDigits ? `+${targetDigits}` : 'WhatsApp User',
+        roleLabel
+      );
+      await this.sendReliableMessage(remoteJid, {
+        image: png,
+        caption: `🪪 *CYBER ID CARD • SAYRON MD*`,
+        mentions: [targetUserJid],
+      });
+      return true;
+    }
+
+    if (cmd === 'tovo') {
+      const media = this.extractMediaSource(msg);
+      if (
+        !media ||
+        (media.mediaType !== 'image' && media.mediaType !== 'video' && media.mediaType !== 'audio')
+      ) {
+        await this.sendReliableMessage(remoteJid, {
+          text: `👁️ Kisi photo, video ya voice note par reply kar ke *${prefix}tovo* likhein!`,
+        });
+        return true;
+      }
+      try {
+        const buffer = (await downloadMediaMessage(
+          media.targetMsg as any,
+          'buffer',
+          {},
+          { logger: silentLogger, reuploadRequest: this.sock!.updateMediaMessage }
+        )) as Buffer;
+        if (media.mediaType === 'image') {
+          await this.sendReliableMessage(remoteJid, { image: buffer, viewOnce: true } as any);
+        } else if (media.mediaType === 'video') {
+          await this.sendReliableMessage(remoteJid, { video: buffer, viewOnce: true } as any);
+        } else {
+          await this.sendReliableMessage(remoteJid, {
+            audio: buffer,
+            mimetype: media.mimeType || 'audio/ogg; codecs=opus',
+            ptt: Boolean(media.details?.ptt),
+            viewOnce: true,
+          } as any);
+        }
+      } catch {
+        await this.sendReliableMessage(remoteJid, { text: `⚠️ View-Once conversion failed.` });
+      }
       return true;
     }
 

@@ -114,13 +114,13 @@ export function buildCompactMenuText(_isOwner: boolean): string {
       emoji: '🧰',
       cmds: [
         'ajoin', 'alinks', 'antidelete', 'antivv', 'base64', 'b64',
-        'b64decode', 'binary', 'calc', 'convert', 'crypto', 'decode',
+        'b64decode', 'binary', 'calc', 'carbon', 'convert', 'crypto', 'decode',
         'dns', 'encode', 'exec', 'fancy', 'forex', 'gbc', 'geoip',
         'gggg', 'github', 'gold', 'groups', 'gst', 'gcstatus', 'hash',
-        'hb', 'ip', 'leaveall', 'math', 'morse', 'notes', 'password',
-        'pkr', 'plugin', 'plugins', 'qr', 'readmore', 'reload',
+        'hb', 'idcard', 'ip', 'leaveall', 'math', 'morse', 'notes', 'password',
+        'pin', 'pkr', 'plugin', 'plugins', 'qr', 'readmore', 'rec', 'reload',
         'remind', 'schedule', 'short', 'spam', 'statusview', 'style',
-        'time', 'todo', 'translate', 'trt', 'update', 'uuid', 'vv',
+        'time', 'todo', 'tovo', 'translate', 'trt', 'unpin', 'update', 'uuid', 'vv',
         'weather', 'whois', 'wiki',
       ],
     },
@@ -150,11 +150,11 @@ export function buildCompactMenuText(_isOwner: boolean): string {
       title: 'media',
       emoji: '🎵',
       cmds: [
-        'audio', 'compress', 'download', 'livesticker', 'media',
+        'attp', 'audio', 'brat', 'brat2', 'compress', 'download', 'livesticker', 'media',
         'mediainfo', 'mediaurl', 'music', 'naat', 'ocr', 'play',
-        'qawwali', 'rename', 'ringtone', 's', 'say', 'song',
-        'sticker', 'tg', 'tgsticker', 'tgstickers', 'toimg', 'tom3',
-        'tomp3', 'toupload', 'tovideo', 'tovn', 'transcribe', 'tts',
+        'qawwali', 'qc', 'rename', 'ringtone', 's', 'say', 'smeme', 'song',
+        'sreact', 'sticker', 'tg', 'tgsticker', 'tgstickers', 'toimg', 'tom3',
+        'tomp3', 'toupload', 'tovideo', 'tovn', 'transcribe', 'ttp', 'tts',
         'uploadurl', 'url', 'vnto', 'voice', 'vto',
       ],
     },
@@ -173,10 +173,10 @@ export function buildCompactMenuText(_isOwner: boolean): string {
       title: 'reactions',
       emoji: '✨',
       cmds: [
-        'angry', 'bite', 'blush', 'bonk', 'celebrate', 'clap', 'cry',
-        'cuddle', 'dance', 'happy', 'highfive', 'hug', 'kill', 'kiss',
-        'laugh', 'love', 'pat', 'poke', 'pout', 'punch', 'sad', 'shy',
-        'slap', 'smile', 'smug', 'thumbsup', 'tickle', 'wave', 'wink',
+        'angry', 'areact', 'bite', 'blush', 'bonk', 'celebrate', 'clap', 'cry',
+        'cuddle', 'dance', 'emojistorm', 'happy', 'highfive', 'hug', 'kill', 'kiss',
+        'laugh', 'love', 'pat', 'poke', 'pout', 'punch', 'react', 'sad', 'shy',
+        'slap', 'smile', 'smug', 'sreact', 'stickerrain', 'thumbsup', 'tickle', 'wave', 'wink',
       ],
     },
     {
@@ -223,6 +223,111 @@ export function buildCompactMenuText(_isOwner: boolean): string {
 
   const footer = `╰─〔 ⚡ *${displayTitle}* • sufyantools.vercel.app ⚡ 〕─╯`;
   return `${headerLines}\n\n${boxes}\n\n${footer}`;
+}
+
+export interface Menu2CarouselCard {
+  title: string;
+  cmds: string[];
+}
+
+export function getMenu2CarouselPages(requestedPage = 1): {
+  page: number;
+  totalPages: number;
+  cards: Menu2CarouselCard[];
+} {
+  const allCards: Menu2CarouselCard[] = [
+    {
+      title: 'Core & Status',
+      cmds: ['alive', 'ping', 'speed', 'uptime', 'system', 'owner'],
+    },
+    {
+      title: 'Sticker & React',
+      cmds: ['sreact', 'areact', 'brat', 'brat2', 'qc', 'attp'],
+    },
+    {
+      title: 'Pro Studio',
+      cmds: ['ttp', 'smeme', 'carbon', 'idcard', 'sticker', 'toimg'],
+    },
+    {
+      title: 'Media & Unlock',
+      cmds: ['vv', 'tovo', 'song', 'video', 'tiktok', 'instagram'],
+    },
+    {
+      title: 'AI & Assistant',
+      cmds: ['ai', 'ask', 'jarvis', 'imagine', 'tts', 'transcribe'],
+    },
+    {
+      title: 'Group Controls',
+      cmds: ['tagall', 'hidetag', 'mute', 'unmute', 'kick', 'promote'],
+    },
+    {
+      title: 'Group Shield',
+      cmds: ['antilink', 'antispam', 'welcome', 'pin', 'unpin', 'delete'],
+    },
+    {
+      title: 'Owner Hub',
+      cmds: ['settings', 'setname', 'setprefix', 'block', 'unblock', 'restart'],
+    },
+    {
+      title: 'Fun & Cyber',
+      cmds: ['shayari', 'attitude', 'aura', 'roast', 'truth', 'dare'],
+    },
+    {
+      title: 'Dev & Islamic',
+      cmds: ['crypto', 'forex', 'github', 'weather', 'surah', '99names'],
+    },
+    // Page 2 (Cards 11-20)
+    {
+      title: 'Audio & Voice FX',
+      cmds: ['bass', '8d', 'lofi', 'nightcore', 'chipmunk', 'tomp3'],
+    },
+    {
+      title: 'Photo Filters',
+      cmds: ['wanted', 'wasted', 'jail', 'glitch', 'pixelate', 'blur'],
+    },
+    {
+      title: 'Social Download',
+      cmds: ['facebook', 'ytmp3', 'ytmp4', 'yts', 'tg', 'tourl'],
+    },
+    {
+      title: 'WhatsApp Spy',
+      cmds: ['antidelete', 'statussave', 'getdp', 'getbio', 'whois', 'osint'],
+    },
+    {
+      title: 'Live Actions',
+      cmds: ['dance', 'hug', 'kiss', 'slap', 'laugh', 'rec'],
+    },
+    {
+      title: 'Broadcast & Ads',
+      cmds: ['broadcast', 'bcgc', 'gcstatus', 'forward', 'poll', 'join'],
+    },
+    {
+      title: 'Security Ops',
+      cmds: ['pentest', 'trace', 'portscan', 'headers', 'matrix', 'firewall'],
+    },
+    {
+      title: 'VIP Meters',
+      cmds: ['vibe', 'iqtest', 'ship', 'mafia', 'king', 'badshah'],
+    },
+    {
+      title: 'Text & Encoding',
+      cmds: ['fancy', 'style', 'qr', 'binary', 'morse', 'translate'],
+    },
+    {
+      title: 'Bot Controls',
+      cmds: ['mode', 'autoreact', 'autoread', 'alwaysonline', 'stats', 'logs'],
+    },
+  ];
+
+  const cardsPerPage = 10;
+  const totalPages = Math.ceil(allCards.length / cardsPerPage);
+  const safePage = Math.max(1, Math.min(totalPages, requestedPage || 1));
+  const startIdx = (safePage - 1) * cardsPerPage;
+  return {
+    page: safePage,
+    totalPages,
+    cards: allCards.slice(startIdx, startIdx + cardsPerPage),
+  };
 }
 
 /**
@@ -3286,6 +3391,409 @@ export async function fetchTelegramStickerPack(
   if (stickers.length === 0) return null;
   return { packName, stickers };
 }
+
+function escapeXml(raw: string): string {
+  return String(raw || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function wrapTextLines(input: string, maxCharsPerLine: number, maxLines: number): string[] {
+  const words = String(input || '').trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [''];
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    if (word.length > maxCharsPerLine) {
+      if (current) {
+        lines.push(current);
+        current = '';
+      }
+      for (let i = 0; i < word.length; i += maxCharsPerLine) {
+        lines.push(word.slice(i, i + maxCharsPerLine));
+        if (lines.length >= maxLines) break;
+      }
+    } else if (!current) {
+      current = word;
+    } else if ((current + ' ' + word).length <= maxCharsPerLine) {
+      current += ' ' + word;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+    if (lines.length >= maxLines) break;
+  }
+  if (current && lines.length < maxLines) {
+    lines.push(current);
+  }
+  return lines.slice(0, maxLines);
+}
+
+let cachedDefaultSreactStickers: Buffer[] | null = null;
+
+export async function buildSreactStickerPack(
+  customLabel?: string,
+  count = 30
+): Promise<Buffer[]> {
+  const cleanLabel = (customLabel || '').trim();
+  const targetCount = Math.max(1, Math.min(35, count));
+  if (!cleanLabel && cachedDefaultSreactStickers && cachedDefaultSreactStickers.length > 0) {
+    return cachedDefaultSreactStickers.slice(0, targetCount);
+  }
+
+  const brandTop = cleanLabel ? cleanLabel.slice(0, 14).toUpperCase() : 'SAYRON MD';
+  const brandSub = cleanLabel ? 'SAYRON MD • VIP' : 'SUFYAN-X-IK';
+
+  const badgeSpecs: Array<{
+    bg: string;
+    border: string;
+    shape: 'hex' | 'shield' | 'circle' | 'diamond' | 'star' | 'pill';
+    title: string;
+    sub: string;
+    emoji: string;
+  }> = [
+    { bg: '#0b1020', border: '#fbbf24', shape: 'shield', title: brandTop, sub: brandSub, emoji: '👑' },
+    { bg: '#081826', border: '#38bdf8', shape: 'circle', title: brandTop, sub: '⚡ PRO BOT', emoji: '⚡' },
+    { bg: '#160b24', border: '#c084fc', shape: 'hex', title: brandTop, sub: '💎 VIP', emoji: '💎' },
+    { bg: '#0b1f17', border: '#34d399', shape: 'diamond', title: brandTop, sub: '🛡️ VERIFIED', emoji: '🛡️' },
+    { bg: '#260b14', border: '#fb7185', shape: 'star', title: brandTop, sub: '🔥 LEGEND', emoji: '🔥' },
+    { bg: '#111827', border: '#f472b6', shape: 'pill', title: brandTop, sub: '🚀 CYBER AI', emoji: '🚀' },
+    { bg: '#09152b', border: '#60a5fa', shape: 'hex', title: brandTop, sub: '✨ OFFICIAL', emoji: '✨' },
+    { bg: '#1f1609', border: '#f59e0b', shape: 'circle', title: 'BOSS!', sub: brandTop, emoji: '😎' },
+    { bg: '#240b18', border: '#f43f5e', shape: 'pill', title: 'LOVE YOU!', sub: brandTop, emoji: '❤️' },
+    { bg: '#0a1f24', border: '#22d3ee', shape: 'diamond', title: 'CHILL!', sub: brandTop, emoji: '🎵' },
+    { bg: '#17112b', border: '#a78bfa', shape: 'shield', title: 'THANK YOU!', sub: brandTop, emoji: '💖' },
+    { bg: '#0d2115', border: '#4ade80', shape: 'pill', title: '100% OP!', sub: brandTop, emoji: '💯' },
+    { bg: '#24110b', border: '#fb923c', shape: 'star', title: 'SAVAGE!', sub: brandTop, emoji: '😈' },
+    { bg: '#0c1824', border: '#2dd4bf', shape: 'circle', title: 'KING!', sub: brandTop, emoji: '👑' },
+    { bg: '#1e1026', border: '#e879f9', shape: 'hex', title: 'ON FIRE!', sub: brandTop, emoji: '🔥' },
+    { bg: '#0a1d1f', border: '#06b6d4', shape: 'shield', title: 'BROTHER!', sub: brandTop, emoji: '🤝' },
+    { bg: '#241709', border: '#facc15', shape: 'star', title: 'HAHAHA!', sub: brandTop, emoji: '😂' },
+    { bg: '#140f29', border: '#818cf8', shape: 'diamond', title: 'MIND BLOWN', sub: brandTop, emoji: '🤯' },
+    { bg: '#210c1c', border: '#ec4899', shape: 'pill', title: 'PARTY!', sub: brandTop, emoji: '🥳' },
+    { bg: '#0b1b26', border: '#38bdf8', shape: 'circle', title: 'WATCHING!', sub: brandTop, emoji: '👀' },
+    { bg: '#0f2214', border: '#22c55e', shape: 'hex', title: 'POWERFUL!', sub: brandTop, emoji: '💪' },
+    { bg: '#241b0a', border: '#eab308', shape: 'star', title: 'SUPERSTAR!', sub: brandTop, emoji: '🌟' },
+    { bg: '#260d0d', border: '#ef4444', shape: 'diamond', title: 'BOOM!', sub: brandTop, emoji: '💥' },
+    { bg: '#141926', border: '#fcd34d', shape: 'shield', title: 'NO. 1!', sub: brandTop, emoji: '🥇' },
+    { bg: '#081b21', border: '#14b8a6', shape: 'circle', title: 'LOCKED IN!', sub: brandTop, emoji: '🎯' },
+    { bg: '#1c1024', border: '#c084fc', shape: 'pill', title: 'PEACE!', sub: brandTop, emoji: '✌️' },
+    { bg: '#0b1912', border: '#10b981', shape: 'shield', title: 'SALUTE!', sub: brandTop, emoji: '🫡' },
+    { bg: '#1e0d24', border: '#f472b6', shape: 'hex', title: 'AESTHETIC', sub: brandTop, emoji: '🦋' },
+    { bg: '#071626', border: '#0ea5e9', shape: 'diamond', title: 'CYBER VIP', sub: brandTop, emoji: '💫' },
+    { bg: '#1f1208', border: '#fb923c', shape: 'pill', title: 'ULTRA PRO', sub: brandTop, emoji: '⚡' },
+  ];
+
+  const renderBadge = async (spec: (typeof badgeSpecs)[number]): Promise<Buffer> => {
+    let shapeSvg = '';
+    if (spec.shape === 'circle') {
+      shapeSvg = `<circle cx="256" cy="256" r="205" fill="${spec.bg}" stroke="${spec.border}" stroke-width="18"/>`;
+    } else if (spec.shape === 'hex') {
+      shapeSvg = `<polygon points="256,42 444,148 444,364 256,470 68,364 68,148" fill="${spec.bg}" stroke="${spec.border}" stroke-width="18" stroke-linejoin="round"/>`;
+    } else if (spec.shape === 'diamond') {
+      shapeSvg = `<polygon points="256,36 476,256 256,476 36,256" fill="${spec.bg}" stroke="${spec.border}" stroke-width="18" stroke-linejoin="round"/>`;
+    } else if (spec.shape === 'shield') {
+      shapeSvg = `<path d="M256 40 L432 108 V248 C432 365 344 440 256 472 C168 440 80 365 80 248 V108 Z" fill="${spec.bg}" stroke="${spec.border}" stroke-width="18" stroke-linejoin="round"/>`;
+    } else if (spec.shape === 'star') {
+      shapeSvg = `<polygon points="256,34 316,162 456,178 352,272 380,412 256,344 132,412 160,272 56,178 196,162" fill="${spec.bg}" stroke="${spec.border}" stroke-width="16" stroke-linejoin="round"/>`;
+    } else {
+      shapeSvg = `<rect x="44" y="112" width="424" height="288" rx="68" fill="${spec.bg}" stroke="${spec.border}" stroke-width="18"/>`;
+    }
+
+    const titleFont = spec.title.length > 10 ? 44 : 56;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+      <defs>
+        <filter id="glow"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="${spec.border}" flood-opacity="0.7"/></filter>
+      </defs>
+      <g filter="url(#glow)">
+        ${shapeSvg}
+      </g>
+      <text x="256" y="198" text-anchor="middle" font-size="88">${escapeXml(spec.emoji)}</text>
+      <text x="256" y="294" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="${titleFont}" fill="#ffffff" stroke="#000000" stroke-width="6" paint-order="stroke">${escapeXml(spec.title)}</text>
+      <text x="256" y="346" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="28" fill="${spec.border}" stroke="#000000" stroke-width="4" paint-order="stroke">${escapeXml(spec.sub)}</text>
+    </svg>`;
+
+    const webp = await sharp(Buffer.from(svg))
+      .resize(512, 512)
+      .webp({ quality: 88 })
+      .toBuffer();
+    return injectWhatsAppStickerExif(webp);
+  };
+
+  const rendered = await Promise.all(badgeSpecs.map((s) => renderBadge(s)));
+  if (!cleanLabel) {
+    cachedDefaultSreactStickers = rendered;
+  }
+  if (targetCount <= rendered.length) {
+    return rendered.slice(0, targetCount);
+  }
+  const extended: Buffer[] = [];
+  for (let i = 0; i < targetCount; i++) {
+    extended.push(rendered[i % rendered.length]);
+  }
+  return extended;
+}
+
+export async function buildBratSticker(text: string, darkMode = false): Promise<Buffer> {
+  const clean = (text || 'sayron md').trim().slice(0, 120);
+  const bg = darkMode ? '#090b12' : '#8ace00';
+  const fg = darkMode ? '#38bdf8' : '#050505';
+  const lines = wrapTextLines(clean.toLowerCase(), 13, 5);
+  const fontSize = lines.length <= 1 ? 82 : lines.length === 2 ? 68 : lines.length === 3 ? 56 : 46;
+  const lineHeight = Math.round(fontSize * 1.18);
+  const startY = Math.round(256 - ((lines.length - 1) * lineHeight) / 2 + fontSize * 0.34);
+
+  const tspans = lines
+    .map(
+      (line, idx) =>
+        `<text x="256" y="${startY + idx * lineHeight}" text-anchor="middle" font-family="Arial Narrow, Arial, Helvetica, sans-serif" font-weight="800" letter-spacing="-1" font-size="${fontSize}" fill="${fg}">${escapeXml(line)}</text>`
+    )
+    .join('');
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+    <rect x="16" y="16" width="480" height="480" rx="46" fill="${bg}" ${darkMode ? 'stroke="#38bdf8" stroke-width="6"' : ''}/>
+    <g filter="url(#soft)">${tspans}</g>
+    <defs>
+      <filter id="soft"><feGaussianBlur stdDeviation="1.1"/></filter>
+    </defs>
+  </svg>`;
+
+  const webp = await sharp(Buffer.from(svg)).resize(512, 512).webp({ quality: 90 }).toBuffer();
+  return injectWhatsAppStickerExif(webp);
+}
+
+export async function buildQuoteCardSticker(authorName: string, text: string): Promise<Buffer> {
+  const cleanName = (authorName || 'SAYRON USER').trim().slice(0, 26);
+  const cleanText = (text || 'Hello!').trim().slice(0, 180);
+  const initial = (cleanName.replace(/[^A-Za-z0-9]/g, '')[0] || 'S').toUpperCase();
+  const lines = wrapTextLines(cleanText, 24, 5);
+  const lineH = 34;
+  const bubbleH = Math.max(150, 108 + lines.length * lineH);
+  const bubbleTop = Math.round((512 - bubbleH) / 2);
+
+  const textEls = lines
+    .map(
+      (l, idx) =>
+        `<text x="128" y="${bubbleTop + 88 + idx * lineH}" font-family="Arial, Helvetica, sans-serif" font-weight="500" font-size="25" fill="#e2e8f0">${escapeXml(l)}</text>`
+    )
+    .join('');
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+    <defs>
+      <linearGradient id="av" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#06b6d4"/>
+        <stop offset="100%" stop-color="#8b5cf6"/>
+      </linearGradient>
+    </defs>
+    <circle cx="52" cy="${bubbleTop + 34}" r="34" fill="url(#av)" stroke="#38bdf8" stroke-width="3"/>
+    <text x="52" y="${bubbleTop + 45}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="30" fill="#ffffff">${escapeXml(initial)}</text>
+    <rect x="102" y="${bubbleTop}" width="392" height="${bubbleH}" rx="28" fill="#111b21" stroke="#2a3942" stroke-width="3"/>
+    <text x="128" y="${bubbleTop + 42}" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="23" fill="#38bdf8">${escapeXml(cleanName)}</text>
+    ${textEls}
+    <text x="470" y="${bubbleTop + bubbleH - 18}" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="16" fill="#64748b">SAYRON MD</text>
+  </svg>`;
+
+  const webp = await sharp(Buffer.from(svg)).resize(512, 512).webp({ quality: 90 }).toBuffer();
+  return injectWhatsAppStickerExif(webp);
+}
+
+export async function buildTextSticker(text: string, animated = false): Promise<Buffer> {
+  const clean = (text || 'SAYRON MD').trim().slice(0, 90);
+  const lines = wrapTextLines(clean, 14, 4);
+  const fontSize = lines.length <= 1 ? 74 : lines.length === 2 ? 62 : 50;
+  const lineH = Math.round(fontSize * 1.2);
+  const startY = Math.round(256 - ((lines.length - 1) * lineH) / 2 + fontSize * 0.34);
+
+  const renderFrame = async (colorHex: string, glowHex: string): Promise<Buffer> => {
+    const tEls = lines
+      .map(
+        (l, idx) =>
+          `<text x="256" y="${startY + idx * lineH}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="${fontSize}" fill="${colorHex}" stroke="#000000" stroke-width="10" paint-order="stroke">${escapeXml(l)}</text>`
+      )
+      .join('');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+      <defs>
+        <filter id="g"><feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="${glowHex}" flood-opacity="0.85"/></filter>
+      </defs>
+      <g filter="url(#g)">${tEls}</g>
+    </svg>`;
+    return sharp(Buffer.from(svg)).resize(512, 512).png().toBuffer();
+  };
+
+  if (!animated) {
+    const png = await renderFrame('#38bdf8', '#a855f7');
+    return convertImageToWebpSticker(png);
+  }
+
+  const palette = [
+    ['#ff3b5c', '#ff3b5c'],
+    ['#fbbf24', '#f59e0b'],
+    ['#34d399', '#10b981'],
+    ['#38bdf8', '#0ea5e9'],
+    ['#c084fc', '#a855f7'],
+    ['#f472b6', '#ec4899'],
+  ];
+  const tmpDir = os.tmpdir();
+  const uid = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const framePaths: string[] = [];
+  const outWebp = path.join(tmpDir, `attp_${uid}.webp`);
+  try {
+    for (let i = 0; i < palette.length; i++) {
+      const [c, g] = palette[i];
+      const buf = await renderFrame(c, g);
+      const fp = path.join(tmpDir, `attp_${uid}_${i}.png`);
+      await fs.promises.writeFile(fp, buf);
+      framePaths.push(fp);
+    }
+    await execFileAsync(
+      'ffmpeg',
+      [
+        '-y',
+        '-framerate',
+        '6',
+        '-i',
+        path.join(tmpDir, `attp_${uid}_%d.png`),
+        '-loop',
+        '0',
+        '-c:v',
+        'libwebp',
+        '-lossless',
+        '0',
+        '-q:v',
+        '65',
+        outWebp,
+      ],
+      { timeout: 10000 }
+    );
+    const outBuf = await fs.promises.readFile(outWebp);
+    return injectWhatsAppStickerExif(outBuf);
+  } catch {
+    const png = await renderFrame('#38bdf8', '#a855f7');
+    return convertImageToWebpSticker(png);
+  } finally {
+    for (const fp of framePaths) fs.promises.unlink(fp).catch(() => {});
+    fs.promises.unlink(outWebp).catch(() => {});
+  }
+}
+
+export async function buildStickerMeme(
+  imageBuffer: Buffer,
+  topText: string,
+  bottomText: string
+): Promise<Buffer> {
+  const base = await sharp(imageBuffer, { limitInputPixels: false })
+    .resize(512, 512, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toBuffer();
+
+  const topLines = topText.trim() ? wrapTextLines(topText.trim().toUpperCase(), 18, 2) : [];
+  const botLines = bottomText.trim() ? wrapTextLines(bottomText.trim().toUpperCase(), 18, 2) : [];
+
+  const topSvg = topLines
+    .map(
+      (l, i) =>
+        `<text x="256" y="${54 + i * 44}" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-weight="900" font-size="40" fill="#ffffff" stroke="#000000" stroke-width="8" paint-order="stroke">${escapeXml(l)}</text>`
+    )
+    .join('');
+  const botSvg = botLines
+    .map(
+      (l, i) =>
+        `<text x="256" y="${486 - (botLines.length - 1 - i) * 44}" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-weight="900" font-size="40" fill="#ffffff" stroke="#000000" stroke-width="8" paint-order="stroke">${escapeXml(l)}</text>`
+    )
+    .join('');
+
+  const overlay = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">${topSvg}${botSvg}</svg>`;
+  const composited = await sharp(base)
+    .composite([{ input: Buffer.from(overlay), top: 0, left: 0 }])
+    .webp({ quality: 88 })
+    .toBuffer();
+  return injectWhatsAppStickerExif(composited);
+}
+
+export async function buildCarbonCodeCard(codeText: string, title = 'sayron-md.ts'): Promise<Buffer> {
+  const rawLines = String(codeText || '// SAYRON MD').split(/\r?\n/).slice(0, 14);
+  const formatted: string[] = [];
+  for (const rl of rawLines) {
+    if (rl.length <= 58) formatted.push(rl);
+    else {
+      formatted.push(rl.slice(0, 58));
+      if (formatted.length < 14) formatted.push(rl.slice(58, 116));
+    }
+    if (formatted.length >= 14) break;
+  }
+  const height = Math.max(360, 170 + formatted.length * 32);
+  const codeEls = formatted
+    .map((line, i) => {
+      const y = 128 + i * 32;
+      return `<text x="64" y="${y}" font-family="monospace" font-size="20" fill="#475569">${String(i + 1).padStart(2, ' ')}</text>
+      <text x="108" y="${y}" font-family="monospace" font-size="20" fill="#e2e8f0">${escapeXml(line)}</text>`;
+    })
+    .join('');
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="${height}" viewBox="0 0 960 ${height}">
+    <defs>
+      <linearGradient id="bgc" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#0f172a"/>
+        <stop offset="100%" stop-color="#1e1b4b"/>
+      </linearGradient>
+    </defs>
+    <rect width="960" height="${height}" fill="url(#bgc)"/>
+    <rect x="36" y="30" width="888" height="${height - 60}" rx="20" fill="#0b1120" stroke="#334155" stroke-width="2"/>
+    <circle cx="68" cy="64" r="9" fill="#ef4444"/>
+    <circle cx="96" cy="64" r="9" fill="#f59e0b"/>
+    <circle cx="124" cy="64" r="9" fill="#22c55e"/>
+    <text x="480" y="70" text-anchor="middle" font-family="monospace" font-size="18" fill="#94a3b8">${escapeXml(title)}</text>
+    ${codeEls}
+    <text x="900" y="${height - 46}" text-anchor="end" font-family="Arial, sans-serif" font-weight="700" font-size="15" fill="#38bdf8">SAYRON MD • SUFYAN-X-IK</text>
+  </svg>`;
+
+  return sharp(Buffer.from(svg)).png().toBuffer();
+}
+
+export async function buildCyberIdCard(
+  name: string,
+  phone: string,
+  roleLabel: string
+): Promise<Buffer> {
+  const cleanName = (name || 'USER').trim().slice(0, 22);
+  const cleanPhone = (phone || 'WhatsApp User').trim().slice(0, 24);
+  const initial = (cleanName.replace(/[^A-Za-z0-9]/g, '')[0] || 'S').toUpperCase();
+  const aura = 78 + (cleanName.length * 7) % 22;
+  const level = 12 + (cleanPhone.length * 5) % 85;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520">
+    <defs>
+      <linearGradient id="cardbg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#050816"/>
+        <stop offset="50%" stop-color="#0f172a"/>
+        <stop offset="100%" stop-color="#1e1b4b"/>
+      </linearGradient>
+      <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#22d3ee"/>
+        <stop offset="100%" stop-color="#a855f7"/>
+      </linearGradient>
+    </defs>
+    <rect width="960" height="520" rx="28" fill="url(#cardbg)"/>
+    <rect x="20" y="20" width="920" height="480" rx="22" fill="none" stroke="url(#accent)" stroke-width="4"/>
+    <circle cx="155" cy="230" r="92" fill="#0f172a" stroke="#22d3ee" stroke-width="6"/>
+    <text x="155" y="264" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="96" fill="#ffffff">${escapeXml(initial)}</text>
+    <rect x="288" y="64" width="220" height="36" rx="18" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+    <text x="398" y="88" text-anchor="middle" font-family="Arial, sans-serif" font-weight="800" font-size="17" fill="#38bdf8">${escapeXml(roleLabel)}</text>
+    <text x="288" y="156" font-family="Arial, sans-serif" font-weight="900" font-size="48" fill="#ffffff">${escapeXml(cleanName)}</text>
+    <text x="288" y="204" font-family="monospace" font-size="24" fill="#94a3b8">${escapeXml(cleanPhone)}</text>
+    <text x="288" y="274" font-family="Arial, sans-serif" font-weight="700" font-size="22" fill="#e2e8f0">LEVEL ${level} • AURA ${aura}%</text>
+    <rect x="288" y="294" width="580" height="20" rx="10" fill="#1e293b"/>
+    <rect x="288" y="294" width="${Math.round(5.8 * aura)}" height="20" rx="10" fill="url(#accent)"/>
+    <text x="288" y="382" font-family="Arial, sans-serif" font-weight="700" font-size="20" fill="#cbd5e1">STATUS: VERIFIED MEMBER • 24/7 ENGINE</text>
+    <text x="896" y="468" text-anchor="end" font-family="Arial, sans-serif" font-weight="900" font-size="22" fill="#38bdf8">SAYRON MD • POWERED BY SUFYAN-X-IK</text>
+  </svg>`;
+
+  return sharp(Buffer.from(svg)).png().toBuffer();
+}
+
 
 
 

@@ -31,9 +31,33 @@ async function startServer() {
   const PORT = portFromArg || (isProd && process.env.PORT ? Number(process.env.PORT) : 3000);
 
   const app = express();
+  app.disable('x-powered-by');
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'same-origin');
+    const rawPath = (req.path || '/').toLowerCase();
+    const isBlockedPath =
+      rawPath.includes('..') ||
+      rawPath.startsWith('/.git') ||
+      rawPath.startsWith('/.env') ||
+      rawPath.startsWith('/.data') ||
+      rawPath.startsWith('/.aistudio') ||
+      rawPath.endsWith('.map') ||
+      rawPath === '/package.json' ||
+      rawPath === '/package-lock.json' ||
+      rawPath === '/tsconfig.json' ||
+      rawPath === '/vite.config.ts' ||
+      /^\/server(_[a-z0-9]+)?\.ts$/i.test(rawPath) ||
+      rawPath === '/patch_baileys.ts' ||
+      (isProd && (rawPath.startsWith('/node_modules') || rawPath.startsWith('/src/') || rawPath.endsWith('.ts') || rawPath.endsWith('.tsx')));
+    if (isBlockedPath) {
+      return res.status(404).end();
+    }
+    next();
+  });
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-  app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
+  app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads'), { dotfiles: 'ignore' }));
 
   // Mount Supreme Cyber Admin API
   app.use('/api/admin', adminRouter);
@@ -114,7 +138,11 @@ async function startServer() {
         }
         const buffer = Buffer.from(cleanBase64, 'base64');
         const filename = `track_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${ext}`;
-        fs.writeFileSync(path.join(uploadsAudioDir, filename), buffer);
+        const destAudioPath = path.resolve(uploadsAudioDir, filename);
+        if (!destAudioPath.startsWith(uploadsAudioDir + path.sep)) {
+          return res.status(400).json({ error: 'Invalid file path' });
+        }
+        fs.writeFileSync(destAudioPath, buffer);
         audioUrl = `/uploads/audio/${filename}`;
       }
 
@@ -135,7 +163,11 @@ async function startServer() {
           }
           const buffer = Buffer.from(cleanBase64, 'base64');
           const filename = `cover_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${ext}`;
-          fs.writeFileSync(path.join(uploadsCoversDir, filename), buffer);
+          const destCoverPath = path.resolve(uploadsCoversDir, filename);
+          if (!destCoverPath.startsWith(uploadsCoversDir + path.sep)) {
+            return res.status(400).json({ error: 'Invalid cover path' });
+          }
+          fs.writeFileSync(destCoverPath, buffer);
           coverUrl = `/uploads/covers/${filename}`;
         }
       }
@@ -278,7 +310,7 @@ async function startServer() {
 
   const publicPath = path.join(process.cwd(), 'public');
   if (fs.existsSync(publicPath)) {
-    app.use(express.static(publicPath));
+    app.use(express.static(publicPath, { dotfiles: 'ignore' }));
   }
 
   if (process.env.NODE_ENV !== 'production') {
@@ -290,7 +322,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     if (fs.existsSync(distPath)) {
-      app.use(express.static(distPath));
+      app.use(express.static(distPath, { dotfiles: 'ignore' }));
       app.get('*', (_req, res) => {
         res.sendFile(path.join(distPath, 'index.html'));
       });
